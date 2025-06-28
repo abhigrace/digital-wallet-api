@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // For SQLite use: provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  passwordHash    String
+  balance         Decimal  @default(0) @db.Decimal(15, 2)
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  sentTransactions     Transaction[] @relation("Sender")
+  receivedTransactions Transaction[] @relation("Receiver")
+  
+  @@map("users")
+}
+
+model Transaction {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  type          String   // 'credit', 'debit', 'purchase'
+  amount        Decimal  @db.Decimal(15, 2)
+  description   String?
+  recipientId   Int?
+  productId     Int?
+  balanceAfter  Decimal  @db.Decimal(15, 2)
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  user      User     @relation("Sender", fields: [userId], references: [id])
+  recipient User?    @relation("Receiver", fields: [recipientId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id])
+  
+  @@map("transactions")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Decimal  @db.Decimal(15, 2)
+  description String?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  transactions Transaction[]
+  
+  @@map("products")
+}
